@@ -1,65 +1,76 @@
 #include <iostream>
 #include <string>
-#include "windows.h"
+#include <unistd.h>
+#include <sys/poll.h>
+//#include "windows.h"
 #include <ctype.h>
 
 using namespace std;
 
-int main(){
-    static string msg;
-    while(1){
-
-        bool noString = true;
-		bool quit = false;
-
-        while(noString){
-            static string msgBis;
-            cout<<"Saisissez votre message"<<endl;
-            cin>>msgBis;
-            if(msgBis.compare("@") == 0){
-				quit = true;
-				return 0;
-			}
-            cerr<<" std err: r�ception de: "<< msgBis <<endl;
-
-
-            if(msgBis == "") break;
-              else msg = msgBis;
-
-            for(int i=0; i<msg.length();  i++){
-                if(!isalpha(msg[i])) {
-                 cerr<<"cerr: please put only letter"<<endl;
-                 break;
-                }
-                else if(i== msg.length()-1 ) noString = false;
-            }
-        }
-
-        cout<< msg <<endl;
-		Sleep(1000);
-    }
-	return 0;
-}
-
-
-/*std::string readStdIn()
+string readStdIn()
 {
-    struct pollfd pfd = { STDIN_FILENO, POLLIN, 0 };
+  struct pollfd pfd = { STDIN_FILENO, POLLIN, 0 };
 
-    std::string line;
-    int ret = 0;
-    while(ret == 0)
+  string line;
+  int ret = 0;
+
+    //cout<<"Saisissez votre message"<<endl;
+    ret = poll(&pfd, 1, 5000);  // timeout of 1000ms
+    if(ret == 1) // there is something to read
     {
-        ret = poll(&pfd, 1, 1000);  // timeout of 1000ms
-        if(ret == 1) // there is something to read
-        {
-            std::getline(std::cin, line);
-        }
-        else if(ret == -1)
-        {
-            std::cout << "Error: " << strerror(errno) << std::endl;
-        }
+      getline(cin, line);
     }
-    return line;
+
+  return line;
 }
-*/
+
+int main(){
+  static string msg;
+  bool first = true;
+
+  while(1){
+
+    bool noString = true;
+
+
+    while(noString){
+      static string msgBis;
+
+      //cin>>msgBis;
+      msgBis=readStdIn();
+      // absence de message
+
+      if (msgBis.length() == 0){
+        // ième demande de changement de message
+        if (first == false) {
+          break;
+        }
+      }else{
+      // message non vide
+        cerr<<" cerr: reception de: "<< msgBis <<endl;
+
+        // caractère de fin
+        if(msgBis.compare("@") == 0){
+          return 0;
+        }
+
+        // vérification des caractères
+        for(int i=0; i<msgBis.length();  i++){
+          if(!isalpha(msgBis[i])) {
+             cerr<<"cerr: please put only letter"<<endl;
+             break;
+          }
+          else if(i == msgBis.length()-1) {
+            noString = false;
+            if (first) first = false;
+            msg = msgBis;
+        }
+      }
+
+
+    }
+    }
+    cout<< msg <<endl;
+  }
+  return 0;
+}
